@@ -3,7 +3,6 @@ package org.example.avgspd;
 import javafx.application.Platform;
 import javafx.event.ActionEvent;
 import javafx.fxml.FXML;
-import javafx.fxml.Initializable;
 import javafx.geometry.NodeOrientation;
 import javafx.scene.control.Button;
 import javafx.scene.control.Label;
@@ -30,128 +29,211 @@ public class AverageSpeedController {
 
     private Locale currentLocale = new Locale("en", "UK");
     private Map<String, String> localizedStrings;
-    /**
-     * Initialize the controller - called automatically after FXML loading
-     */
+
+    private javafx.beans.value.ChangeListener<String> distantListener;
+    private javafx.beans.value.ChangeListener<String> timeListener;
+
     @FXML
     public void initialize() {
-        // Set initial language
         setLanguage(currentLocale);
 
-        // Add listeners to clear result when input changes
-        tfDistant.textProperty().addListener((obs, oldVal, newVal) -> lblResult.setText(""));
-        tfTime.textProperty().addListener((obs, oldVal, newVal) -> lblResult.setText(""));
+        // ✅ FIX: Only clear result when user types, NOT when code clears field
+        tfDistant.textProperty().addListener((o, oldVal, newVal) -> {
+            if (tfDistant.isFocused()) lblResult.setText("");
+        });
+
+        tfTime.textProperty().addListener((o, oldVal, newVal) -> {
+            if (tfTime.isFocused()) lblResult.setText("");
+        });
     }
 
-    /**
-     * Language button handlers
-     */
-    @FXML
-    public void onENClick(ActionEvent e) { setLanguage(new Locale("en", "UK")); }
+    // ---------------- Language Buttons ----------------
+    @FXML public void onENClick(ActionEvent e) { setLanguage(new Locale("en", "UK")); }
+    @FXML public void onFRClick(ActionEvent e) { setLanguage(new Locale("fr", "FR")); }
+    @FXML public void onVIClick(ActionEvent e) { setLanguage(new Locale("vi", "VN")); }
+    @FXML public void onURClick(ActionEvent e) { setLanguage(new Locale("ur", "PK")); }
+    @FXML public void onFAClick(ActionEvent e) { setLanguage(new Locale("fa", "IR")); }
 
-    @FXML
-    public void onFRClick(ActionEvent e) { setLanguage(new Locale("fr", "FR")); }
+    // ---------------- Apply Language ----------------
+    private void setLanguage(Locale locale) {
+        currentLocale = locale;
 
-    @FXML
-    public void onVIClick(ActionEvent e) { setLanguage(new Locale("vi", "VN")); }
+        localizedStrings = LocalizationService.getLocalizedStrings(locale);
 
-    @FXML
-    public void onURClick(ActionEvent e) { setLanguage(new Locale("ur", "PK")); }
+        lblTitle.setText(localizedStrings.getOrDefault("title", "Average Calculator"));
+        lblDistant.setText(localizedStrings.getOrDefault("distant", "Distance (km):"));
+        lblTime.setText(localizedStrings.getOrDefault("time", "Time (h):"));
+        btnCalculate.setText(localizedStrings.getOrDefault("calculate", "Calculate"));
 
-    @FXML
-    public void onFAClick(ActionEvent e) { setLanguage(new Locale("fa", "IR")); }
+        displayLocalTime(locale);
+        applyTextDirection(locale);
 
-    /**
-     * Calculate BMI button handler
-     */
+        removeDigitListeners();
+        applyDigitLocalization(locale);
+    }
+
+    private void removeDigitListeners() {
+        if (distantListener != null) tfDistant.textProperty().removeListener(distantListener);
+        if (timeListener != null) tfTime.textProperty().removeListener(timeListener);
+    }
+
+    // ✅ Correct digit conversion for FA/UR/AR
+    private void applyDigitLocalization(Locale locale) {
+        boolean isEastern = locale.getLanguage().equals("fa") ||
+                locale.getLanguage().equals("ur") ||
+                locale.getLanguage().equals("ar");
+
+        if (!isEastern) return;
+
+        distantListener = (obs, oldVal, newVal) -> {
+            if (newVal == null) return;
+
+            String normalized = convertToWesternDigits(newVal);
+            String localized = localizeToEasternDigits(normalized);
+
+            if (!localized.equals(newVal)) tfDistant.setText(localized);
+        };
+
+        timeListener = (obs, oldVal, newVal) -> {
+            if (newVal == null) return;
+
+            String normalized = convertToWesternDigits(newVal);
+            String localized = localizeToEasternDigits(normalized);
+
+            if (!localized.equals(newVal)) tfTime.setText(localized);
+        };
+
+        tfDistant.textProperty().addListener(distantListener);
+        tfTime.textProperty().addListener(timeListener);
+    }
+
+    // ------------ Digit Conversion Helpers ------------
+    private String convertToWesternDigits(String input) {
+        StringBuilder out = new StringBuilder();
+        for (char c : input.toCharArray()) {
+            if (c >= '0' && c <= '9') out.append(c);
+            else if (c >= '٠' && c <= '٩') out.append(c - '٠');
+            else if (c >= '۰' && c <= '۹') out.append(c - '۰');
+            else out.append(c);
+        }
+        return out.toString();
+    }
+
+    private String localizeToEasternDigits(String input) {
+        return input.replace("0", "۰").replace("1", "۱").replace("2", "۲")
+                .replace("3", "۳").replace("4", "۴").replace("5", "۵")
+                .replace("6", "۶").replace("7", "۷").replace("8", "۸")
+                .replace("9", "۹");
+    }
+
+    private String normalizeNumber(String input, Locale locale) {
+        if (input == null) return "";
+        input = removeDirectionalMarks(input);
+
+        String result = convertToWesternDigits(input);
+        result = result.replace("٫", ".").replace("،", ".");
+
+        if (java.text.DecimalFormatSymbols.getInstance(locale).getDecimalSeparator() == ',')
+            result = result.replace(",", ".");
+
+        return result.replaceAll("[^0-9.]", "");
+    }
+
+    private String removeDirectionalMarks(String s) {
+        return s.replace("\u200F","").replace("\u200E","")
+                .replace("\u202A","").replace("\u202B","")
+                .replace("\u202C","").replace("\u202D","")
+                .replace("\u202E","");
+    }
+
+    // ---------------- Calculate ----------------
     @FXML
     public void onCalculateClick(ActionEvent e) {
+
         try {
-            double distant = Double.parseDouble(tfDistant.getText());
-            double time = Double.parseDouble(tfTime.getText());
+            String rawDist = tfDistant.getText();
+            String rawTime = tfTime.getText();
+
+            String distNorm = normalizeNumber(rawDist, currentLocale);
+            String timeNorm = normalizeNumber(rawTime, currentLocale);
+
+            double distant = Double.parseDouble(distNorm);
+            double time = Double.parseDouble(timeNorm);
 
             if (distant <= 0 || time <= 0) {
-                lblResult.setText(localizedStrings.getOrDefault("error_invalid_input", "Please enter valid numbers"));
+                lblResult.setText(localizedStrings.get("error_invalid_input"));
                 return;
             }
 
-            double average = distant / time;
+            double avg = distant / time;
+            String westernAvg = String.format("%.2f", avg);
 
+            // ✅ Localize digits ONLY for RTL languages
+            String localizedAvg = westernAvg;
+            if (currentLocale.getLanguage().equals("fa") ||
+                    currentLocale.getLanguage().equals("ur") ||
+                    currentLocale.getLanguage().equals("ar")) {
+                localizedAvg = localizeToEasternDigits(westernAvg);
+            }
 
-            String result = String.format(localizedStrings.getOrDefault("avg_result", "average speed: %.2f"), average);
-            lblResult.setText(result);
+            String resultText = String.format(
+                    localizedStrings.getOrDefault("avg_result", "Average speed: %s"),
+                    localizedAvg
+            );
 
-        } catch (NumberFormatException ex) {
-            lblResult.setText(localizedStrings.getOrDefault("error_invalid_input", "Please enter valid numbers"));
+            lblResult.setText(resultText);
+
+            // ✅ Save to DB
+            org.example.avgspd.database.AverageSpeedDAO.saveRecord(
+                    distant,
+                    time,
+                    avg,
+                    rawDist,
+                    rawTime,
+                    localizedAvg,
+                    resultText,
+                    currentLocale.getLanguage()
+            );
+
+            // ✅ Clear fields WITHOUT erasing lblResult
+            tfDistant.clear();
+            tfTime.clear();
+
+        } catch (Exception ex) {
+            lblResult.setText(localizedStrings.get("error_invalid_input"));
         }
     }
 
-    /**
-     * Set the application language
-     */
-    private void setLanguage(Locale locale) {
-        currentLocale = locale;
-        lblResult.setText(""); // Clear previous result
-
-        // Load localized strings
-        localizedStrings = LocalizationService.getLocalizedStrings(locale);
-
-        // Update all UI text
-        lblTitle.setText(localizedStrings.getOrDefault("title", "Average Calculator"));
-        lblDistant.setText(localizedStrings.getOrDefault("distant", "Distant (km):"));
-        lblTime.setText(localizedStrings.getOrDefault("time", "Time (h):"));
-        btnCalculate.setText(localizedStrings.getOrDefault("calculate", "Calculate Average Speed"));
-
-        // Update time display with new locale
-        displayLocalTime(locale);
-
-        // Apply text direction based on language
-        applyTextDirection(locale);
-    }
-
-    /**
-     * Apply LTR or RTL layout direction
-     */
+    // ---------------- RTL Layout ----------------
     private void applyTextDirection(Locale locale) {
-        // Step 1: Detect if the language is RTL
-        String lang = locale.getLanguage();
-        boolean isRTL = lang.equals("fa")   // Persian
-                || lang.equals("ur")   // Urdu
-                || lang.equals("ar")   // Arabic
-                || lang.equals("he");  // Hebrew
+        boolean isRTL = locale.getLanguage().equals("fa") ||
+                locale.getLanguage().equals("ur") ||
+                locale.getLanguage().equals("ar") ||
+                locale.getLanguage().equals("he");
 
-        // Step 2: Wrap UI changes in Platform.runLater() for thread safety
         Platform.runLater(() -> {
-            // Step 3: Set NodeOrientation on the root VBox
-            if (rootVBox != null) {
-                rootVBox.setNodeOrientation(
-                        isRTL ? NodeOrientation.RIGHT_TO_LEFT
-                                : NodeOrientation.LEFT_TO_RIGHT
-                );
-            }
+            rootVBox.setNodeOrientation(
+                    isRTL ? NodeOrientation.RIGHT_TO_LEFT : NodeOrientation.LEFT_TO_RIGHT
+            );
 
-            // Step 4: Align text inside TextFields
-            String alignment = isRTL ? "-fx-text-alignment: right; -fx-alignment: center-right;"
-                    : "-fx-text-alignment: left; -fx-alignment: center-left;";
+            String alignment = isRTL ?
+                    "-fx-text-alignment: right; -fx-alignment: center-right;" :
+                    "-fx-text-alignment: left; -fx-alignment: center-left;";
+
             tfDistant.setStyle(alignment);
             tfTime.setStyle(alignment);
         });
     }
 
-    /**
-     * Display local time formatted for the current locale
-     */
+    // ---------------- Time Display ----------------
     private void displayLocalTime(Locale locale) {
         LocalDateTime now = LocalDateTime.now();
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(
+        DateTimeFormatter fmt = DateTimeFormatter.ofPattern(
                 localizedStrings.getOrDefault("time_format", "HH:mm:ss")
         ).withLocale(locale);
 
-        String timeStr = String.format(
-                localizedStrings.getOrDefault("current_time", "Current Time: %s"),
-                now.format(formatter)
+        lblLocalTime.setText(
+                String.format(localizedStrings.getOrDefault("current_time", "Time: %s"), now.format(fmt))
         );
-        lblLocalTime.setText(timeStr);
     }
-
 }
