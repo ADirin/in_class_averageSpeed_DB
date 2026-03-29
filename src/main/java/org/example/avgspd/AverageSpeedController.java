@@ -168,7 +168,7 @@ public class AverageSpeedController {
             double avg = distant / time;
             String westernAvg = String.format("%.2f", avg);
 
-            // ✅ Localize digits ONLY for RTL languages
+            // Localize digits ONLY for RTL languages
             String localizedAvg = westernAvg;
             if (currentLocale.getLanguage().equals("fa") ||
                     currentLocale.getLanguage().equals("ur") ||
@@ -183,7 +183,7 @@ public class AverageSpeedController {
 
             lblResult.setText(resultText);
 
-            // ✅ Save to DB
+            //Save to DB
             org.example.avgspd.database.AverageSpeedDAO.saveRecord(
                     distant,
                     time,
@@ -195,7 +195,7 @@ public class AverageSpeedController {
                     currentLocale.getLanguage()
             );
 
-            // ✅ Clear fields WITHOUT erasing lblResult
+            //Clear fields WITHOUT erasing lblResult
             tfDistant.clear();
             tfTime.clear();
 
