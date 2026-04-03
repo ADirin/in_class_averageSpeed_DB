@@ -109,16 +109,25 @@ public class AverageSpeedController {
 
     // ------------ Digit Conversion Helpers ------------
     private String convertToWesternDigits(String input) {
+        //convertToWesternDigits("Hello ۱۲۳ world ٤٥٦")
+        //// Returns: "Hello 123 world 456"
+
         StringBuilder out = new StringBuilder();
         for (char c : input.toCharArray()) {
+            //if keep if western digits
             if (c >= '0' && c <= '9') out.append(c);
+            // otherwise use dari, Urdu, Persian use
             else if (c >= '٠' && c <= '٩') out.append(c - '٠');
+
             else if (c >= '۰' && c <= '۹') out.append(c - '۰');
+
+            // everthing else unchanged
             else out.append(c);
         }
         return out.toString();
     }
 
+    //It uses a chain of replace() calls — each one replaces a single Western digit with its Eastern Persian counterpart.
     private String localizeToEasternDigits(String input) {
         return input.replace("0", "۰").replace("1", "۱").replace("2", "۲")
                 .replace("3", "۳").replace("4", "۴").replace("5", "۵")
@@ -126,19 +135,22 @@ public class AverageSpeedController {
                 .replace("9", "۹");
     }
 
+    //This normalizeNumber method sanitizes and standardizes a number string from various input formats into a clean,
+    // parseable format with only digits and decimal points.
     private String normalizeNumber(String input, Locale locale) {
         if (input == null) return "";
-        input = removeDirectionalMarks(input);
+        input = removeDirectionalMarks(input); //removes LTR/RTL marks
 
-        String result = convertToWesternDigits(input);
-        result = result.replace("٫", ".").replace("،", ".");
+        String result = convertToWesternDigits(input); //Digitilize
+        result = result.replace("٫", ".").replace("،", "."); //Normalize decimal
 
         if (java.text.DecimalFormatSymbols.getInstance(locale).getDecimalSeparator() == ',')
             result = result.replace(",", ".");
 
         return result.replaceAll("[^0-9.]", "");
     }
-
+// These are invisible control characters that affect text rendering direction (left-to-right or right-to-left)
+// but have no visual appearance themselves.
     private String removeDirectionalMarks(String s) {
         return s.replace("\u200F","").replace("\u200E","")
                 .replace("\u202A","").replace("\u202B","")
@@ -184,7 +196,7 @@ public class AverageSpeedController {
             lblResult.setText(resultText);
 
             //Save to DB
-            org.example.avgspd.database.AverageSpeedDAO.saveRecord(
+            org.example.avgspd.AverageSpeedDAO.saveRecord(
                     distant,
                     time,
                     avg,

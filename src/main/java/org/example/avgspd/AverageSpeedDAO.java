@@ -1,4 +1,4 @@
-package org.example.avgspd.database;
+package org.example.avgspd;
 
 import org.example.avgspd.DatabaseConnection;
 
@@ -45,4 +45,36 @@ public class AverageSpeedDAO {
             e.printStackTrace();
         }
     }
+
+    /* row database localization
+  private static final String INSERT_SQL =
+          "INSERT INTO average_speed(distance, time, avg_speed, created_at, locale_code) " +
+                  "VALUES (?, ?, ?, ?, ?)";
+
+    public static void saveRecord(double distance, double time,
+                                  double avgSpeed, String localeCode) {
+        if (localeCode == null || localeCode.trim().isEmpty()) {
+            localeCode = "en";  // Default fallback
+        }
+
+        try (Connection conn = DatabaseConnection.getConnection();
+             PreparedStatement stmt = conn.prepareStatement(INSERT_SQL)) {
+
+            stmt.setDouble(1, distance);
+            stmt.setDouble(2, time);
+            stmt.setDouble(3, avgSpeed);
+            stmt.setObject(4, LocalDateTime.now());
+            stmt.setString(5, localeCode);
+
+            int rowsInserted = stmt.executeUpdate();
+            if (rowsInserted == 0) {
+                throw new SQLException("Insert failed, no rows affected");
+            }
+
+        } catch (SQLException e) {
+            // Log properly instead of printStackTrace
+            System.err.println("Database error saving record: " + e.getMessage());
+            throw new RuntimeException("Failed to save speed record", e);
+        }
+    }*/
 }

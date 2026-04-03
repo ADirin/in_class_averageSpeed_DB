@@ -13,6 +13,8 @@
         <maven.compiler.source>17</maven.compiler.source>
         <maven.compiler.target>17</maven.compiler.target>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+            <sonar.projectKey>avgspd</sonar.projectKey>
+
         <javafx.version>17.0.6</javafx.version>
     </properties>
 

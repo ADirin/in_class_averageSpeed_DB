@@ -6,7 +6,8 @@ import java.sql.SQLException;
 
 public class DatabaseConnection {
 
-    private static final String URL = "jdbc:mariadb://localhost:3306/avg_speed_db";
+   // private static final String URL = "jdbc:mariadb://localhost:3306/avg_speed_db";
+   private static final String URL = "jdbc:mariadb://localhost:3306/avrgspeed_translation";
     private static final String USER = "root";        // change if needed
     private static final String PASS = "Test12"; // change if needed
 

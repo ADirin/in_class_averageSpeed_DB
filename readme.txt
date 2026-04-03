@@ -8,7 +8,7 @@ to run the minikube in intellij first make sure minikube has it own docker daemo
 build the image
 
 2. docker build -t <your-image-name>:<tag> .
-for example docker build -t amirdirin/sep2_week2_avgspd:latest .
+for example docker build -t amirdirin/sep2_week3_avgspd_db:latest .
 
 Deploy to the kubernetes
 

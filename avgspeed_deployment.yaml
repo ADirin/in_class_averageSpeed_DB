@@ -1,32 +1,42 @@
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: avgspeed-app
-  labels:
-    app: avgspeed-app
+  name: avgspeeddb-app
 spec:
   replicas: 1
   selector:
     matchLabels:
-      app: avgspeed-app
+      app: avgspeeddb-app
   template:
     metadata:
       labels:
-        app: avgspeed-app
+        app: avgspeeddb-app
     spec:
       containers:
-        - name: avgspeed-app
-          image: amirdirin/sep2_week2_avgspd:latest
-          imagePullPolicy: Never   # use Never for local images
+        - name: avgspeeddb-app
+          image: avgspeeddb-app:latest
+          imagePullPolicy: Never
           env:
+            # X11 forwarding for GUI display
             - name: DISPLAY
-              value: "host.minikube.internal:0.0"
-            - name: JAVA_TOOL_OPTIONS
-              value: "-Dprism.order=sw"
-          resources:
-            requests:
-              memory: "512Mi"
-              cpu: "500m"
-            limits:
-              memory: "1Gi"
-              cpu: "1000m"
+              value: "host.minikube.internal:0"
+            # Database connection
+            - name: DB_HOST
+              value: "host.minikube.internal"
+            - name: DB_PORT
+              value: "3306"
+            - name: DB_NAME
+              value: "average_speed_db"
+            - name: DB_USER
+              value: "root"
+            - name: DB_PASSWORD
+              value: "Test12"
+          volumeMounts:
+            # For X11 socket (if needed)
+            - name: x11-socket
+              mountPath: /tmp/.X11-unix
+      volumes:
+        - name: x11-socket
+          hostPath:
+            path: /tmp/.X11-unix
+            type: Directory
