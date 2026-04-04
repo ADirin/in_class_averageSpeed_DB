@@ -1,0 +1,6 @@
+projectKey=SonarAnalyzer:in_class_averageSpeed
+serverUrl=http://localhost:9000
+serverVersion=25.3.0.104237
+dashboardUrl=http://localhost:9000/dashboard?id=SonarAnalyzer%3Ain_class_averageSpeed
+ceTaskId=6f643b0f-21e9-42a7-a95d-c695f6c033ba
+ceTaskUrl=http://localhost:9000/api/ce/task?id=6f643b0f-21e9-42a7-a95d-c695f6c033ba

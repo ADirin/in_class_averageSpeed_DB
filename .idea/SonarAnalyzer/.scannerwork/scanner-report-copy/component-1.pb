@@ -1,0 +1,1 @@
+ :R#SonarAnalyzer:in_class_averageSpeed

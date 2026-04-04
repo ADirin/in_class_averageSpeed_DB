@@ -1,0 +1,1 @@
+ 2javaX6hrAsrc/main/java/org/example/avgspd/service/LocalizationService.java
